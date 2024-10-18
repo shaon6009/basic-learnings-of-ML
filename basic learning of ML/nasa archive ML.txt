@@ -1,0 +1,33 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+
+data = pd.read_csv('/kaggle/input/nasaexoplanets/cleaned_5250.csv')
+
+data['mass_earth'] = data.apply(lambda x: x['mass_multiplier'] if x['mass_wrt'] == 'Earth' else 317.8 * x['mass_multiplier'], axis=1)
+data['radius_earth'] = data.apply(lambda x: x['radius_multiplier'] if x['radius_wrt'] == 'Earth' else 11.2 * x['radius_multiplier'], axis=1)
+
+features = ['radius_earth', 'orbital_period', 'stellar_magnitude']
+x = data[features]
+y = data['planet_type']
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+
+pipeline = Pipeline([
+    ('imputer', SimpleImputer(strategy='mean')),
+    ('classifier', ExtraTreesClassifier(criterion='entropy', n_estimators=100, max_depth=500, min_samples_split=2, max_features='log2'))
+])
+pipeline.fit(x_train, y_train)
+
+def user_input():
+    radius_earth = float(input("Enter planet's radius in Earth radii: "))
+    orbital_period = float(input("Enter orbital period in Earth years: "))
+    stellar_magnitude = float(input("Enter stellar magnitude: "))
+
+    input_data = pd.DataFrame([[radius_earth, orbital_period, stellar_magnitude]], columns=features)
+    prediction = pipeline.predict(input_data)[0]
+
+    print(f'Predicted Planet Type: {prediction}')
+
+user_input()
